@@ -102,7 +102,7 @@
 //#define VGA_HEIGH_RESOLUTION	"480"	//"360"
 #define VGA_HEIGH_RESOLUTION	"360"
 
-#define DISPLAY_PIP_CONTROL_USE		0 // °¡²û Rear È­¸éÀÌ º¸ÀÌÁö ¾Ê´Â ¹®Á¦°¡ ÀÖ¾î »ç¿ëÇÏÁö ¾ÊÀ½
+#define DISPLAY_PIP_CONTROL_USE		0 // ???? Rear ????? ?????? ??? ?????? ??? ??????? ????
 #define DISPLAY_PIP_SIZE 	3 // 2 is 1/4 size
 #define DISPLAY_PIP_FRONT_CAMERA_ONLY 	60
 
@@ -217,7 +217,7 @@ static CDatalog	l_datalog;
 
 struct _UserDataHeader_t {
 	uint8_t   	Separator;    // ???
-	uint8_t   	Header;       // ?˜I?
+	uint8_t   	Header;       // ??I?
 	char   		ProductInfo[6]; // VRHD
 	char   		VersionInfo[20]; // 00.00.01
 	char     	ChannelInfo[4];  // 2
@@ -399,8 +399,14 @@ std::string Recorder_get_recording_file_name_pai_r(const char * dir, struct tm t
 void Recorder_datalog_add(time_t t)
 {
 #ifdef DEF_SAFE_DRIVING_MONITORING
-		if(l_datalog.m_last_add_time != t)
+	if(l_datalog.m_last_add_time != t){
+#ifdef DEF_SAFE_DRIVING_MONITORING_ONOFF
+		if(l_sys_setup.cfg.bsafemonitoring)		//test_241127	
 			safe_driving_monitoring_osakagas();
+#else
+		safe_driving_monitoring_osakagas();
+#endif
+	}
 #endif
 		if(l_datalog.m_last_add_time != t && l_sys_setup.isInit()){
 			ST_DATA_LOG_ITEM log_data;
@@ -868,7 +874,7 @@ class MyFrameObserver : public ui::PreviewFrameObserver {
 				else{
 					Video2error= 0;
 					if(l_recorder_camera2_id == -1){
-						if(value > (16 * size)) //Aging½Ã ¿Àµ¿ÀÛÀÌ ¹ß»ýÇÏ¿© ¹à±â°¡ È®½ÇÇÑ °æ¿ì¸¸ 2Ch·Î ÀüÈ¯
+						if(value > (16 * size)) //Aging?? ???????? ?????? ??? ????? ??ì¸¸ 2Ch?? ???
 							Video2OkCnt++;
 						else
 							Video2OkCnt = 0;
@@ -908,7 +914,7 @@ class MyFrameObserver : public ui::PreviewFrameObserver {
 				else{
 					Video3error= 0;
 					if(l_recorder_camera3_id == -1){
-						if(value1 > (16 * size1)) //Aging½Ã ¿Àµ¿ÀÛÀÌ ¹ß»ýÇÏ¿© ¹à±â°¡ È®½ÇÇÑ °æ¿ì¸¸ 2Ch·Î ÀüÈ¯
+						if(value1 > (16 * size1)) //Aging?? ???????? ?????? ??? ????? ??ì¸¸ 2Ch?? ???
 							Video3OkCnt++;
 						else
 							Video3OkCnt = 0;
@@ -1087,8 +1093,6 @@ static struct parameter_info ise_parameter_list_[] = {
 	{ nullptr, false, false }
 };
 
-
-
 static struct parameter_info recorder_parameter_list_[] = {
 	{ "filedir", true, false },
 	{ "file-prefix", true, false },
@@ -1112,8 +1116,11 @@ static struct parameter_info recorder_parameter_list_[] = {
 	{ "disable-offs-recording", true, true },
 	{ "recording-file-header-write-interval-secs", true, true },
 
-	{ "snd-card", true, false },
-	{ "snd-dev", true, false },
+	{ "snd-card", true, true },
+	{ "snd-dev", true, true },
+	{ "snd-path", true, true },
+	{ "snd-input-sampling-duration-msec", true, true },
+	{ "aec-disabled", true, true },
 	{ "snd-input-channels", true, false },
 	{ "snd-input-sample-size", true, false },
 	{ "snd-input-sampling-rate", true, false },
@@ -1121,6 +1128,7 @@ static struct parameter_info recorder_parameter_list_[] = {
 	{ "osd-font-size", true, true },
 	{ "osd-font-face", true, false },
 	{ "osd-text-color", true, false },
+	{ "osd-use-fixed-size", true, true },
 	{ "osd-use-text-color", true, false },
 	{ "osd-use-bg-color", true, false },
 	{ "osd-bg-color", true, false },
@@ -1199,9 +1207,6 @@ static struct parameter_info recorder_channel_parameter_list_[] = {
 
 	{ nullptr, false, false }
 };
-
-
-
 
 static oasis::key_value_map_t camera_composer_parameters;
 static MotionDetectorRef motion_detector = nullptr;
@@ -1400,9 +1405,13 @@ bool recorder_env_setup(REC_ENV *pEnv, bool is_parking_mode)
 #if 1//(BUILD_MODEL == BUILD_MODEL_VRHD_V1V2)
 		else if(l_sys_setup.cfg.iVideoQuality == CFG_VIDEO_QUALITY_LOW){
  #ifdef DEF_LOW_FRONT_720P
+ 	#if 1
  			pEnv->front_resolution = CFG_RESOLUTION_720P;
- 			//pEnv->rear_resolution = CFG_RESOLUTION_720P;
  			pEnv->rear_resolution = CFG_RESOLUTION_360P;
+	#else	//1080p, 720p Test_241029
+			pEnv->front_resolution = CFG_RESOLUTION_1080P;
+ 			pEnv->rear_resolution = CFG_RESOLUTION_720P;
+	#endif
  #else
 			pEnv->front_resolution = CFG_RESOLUTION_360P;
  			pEnv->rear_resolution = CFG_RESOLUTION_360P;
@@ -1469,20 +1478,32 @@ bool recorder_env_setup(REC_ENV *pEnv, bool is_parking_mode)
 //#endif
 		
 #else	
- #ifdef TARGET_CPU_V536		
+ #ifdef TARGET_CPU_V536	
+#if 0	//bitrate change_240528 (4M, 6M, 8M => 4M, 5.5M, 7M)
 		pEnv->front_bitrate = (l_sys_setup.cfg.iVideoQuality + 1) * BITRATE_1080P + BITRATE_1080P;
 		pEnv->rear_bitrate = (l_sys_setup.cfg.iVideoQuality + 1) * BITRATE_720P;
-		
-		if(l_sys_setup.cfg.iVideoQuality == CFG_VIDEO_QUALITY_HIGH) {
+#endif		
+		if(l_sys_setup.cfg.iVideoQuality == CFG_VIDEO_QUALITY_HIGH) {		//6M,2.5M_file size 100M/36M
 			pEnv->rear_fps = pEnv->front_fps = CAMERA_FPS;
+			pEnv->front_bitrate = (l_sys_setup.cfg.iVideoQuality + 1) * BITRATE_1080P;
+			pEnv->rear_bitrate = (l_sys_setup.cfg.iVideoQuality + 0.5) * BITRATE_720P;
 		}
-		else if(l_sys_setup.cfg.iVideoQuality == CFG_VIDEO_QUALITY_MIDDLE){
+		else if(l_sys_setup.cfg.iVideoQuality == CFG_VIDEO_QUALITY_MIDDLE){		//5M,2M_file size 44M/16M
 			pEnv->rear_fps = pEnv->front_fps = 15;
+			pEnv->front_bitrate = (l_sys_setup.cfg.iVideoQuality + 1) * BITRATE_1080P + BITRATE_720P;
+			pEnv->rear_bitrate = (l_sys_setup.cfg.iVideoQuality + 1) * BITRATE_720P;
 		}
-		else {
+		else {		//4M,1.5M_file size 20M/8M
+	#if 1
 			pEnv->front_fps = 10;
 			pEnv->rear_fps = 6;
+			pEnv->front_bitrate = (l_sys_setup.cfg.iVideoQuality + 1) * BITRATE_1080P + BITRATE_1080P;
 			pEnv->rear_bitrate = BITRATE_REAR_LOW;
+	#else		//1080p, 720p Test_241029
+			pEnv->rear_fps = pEnv->front_fps = 6;
+			pEnv->front_bitrate = 5000000;
+			pEnv->rear_bitrate = 2300000;
+	#endif
 		}
  #else
   #if 0
@@ -1520,7 +1541,7 @@ bool recorder_env_setup(REC_ENV *pEnv, bool is_parking_mode)
 			}
 		}
 		else {		
-			pEnv->front_fps = 10; // CAMERA_FPS Á¤¼ö ¹è·Î ÁöÁ¤ : 1,2,3,5,6,10,15
+			pEnv->front_fps = 10; // CAMERA_FPS ???? ??? ???? : 1,2,3,5,6,10,15
 			pEnv->rear_fps = 5;
 			
  #if DEF_VIDEO_QUALITY_ONLY		
@@ -1604,9 +1625,9 @@ bool recorder_env_setup(REC_ENV *pEnv, bool is_parking_mode)
 
 #ifdef DEF_SAFE_DRIVING_MONITORING
  #ifdef DEF_OSAKAGAS_DATALOG
-  //±Þ°¡¼Ó: 1ÃÊ¸¸¿¡ 12km ÀÌ»ó °¡¼Ó
-  //±Þ°¨ ¼Óµµ: 1ÃÊ ¸¸¿¡ 12km ÀÌ»ó °¨¼Ó
-  //±ÞÇÚµé : Â÷¼Ó¡¿°¢µµ¡À10=26 ÀÌ»ó
+  //?????: 1????? 12km ??? ????
+  //??? ???: 1?? ???? 12km ??? ????
+  //????? : ???????????10=26 ???
  	safe_driving_control_set(l_sys_setup.cfg.iSuddenAccelerationSensi , \
 			l_sys_setup.cfg.iSuddenDeaccelerationSensi, \
 			l_sys_setup.cfg.iRapidRotationSensi,\
@@ -1993,7 +2014,7 @@ static void recorder_env_process(void)
 					if(error_count == 0)
 						led_process_postCommand(LED_WORK_MODE, LED_WORK_SD_ERROR, LED_TIME_INFINITY);
 
-					if(error_count++ < 3 || is_sd_error ) { //Ä«µå ¹Ì»ðÀÔ(3È¸ ¹Ýº¹_5s ÁÖ±â), ³ìÈ­ Áß ¿¡·¯ (¹«ÇÑ¹Ýº¹_5s ÁÖ±â)
+					if(error_count++ < 3 || is_sd_error ) { //??? ?????(3? ???_5s ???), ??? ?? ???? (??????_5s ???)
 						mixwav_play(kMixwaveSDError);
 					}
 					else {
@@ -2002,9 +2023,9 @@ static void recorder_env_process(void)
 				}
 			}
 
-			//.RTC -> ½Ã½ºÅÛ ½Ã°è
+			//.RTC -> ?y??? ?Ã°?
 			//$ hwclock --hctosys
-			//½Ã½ºÅÛ ½Ã°è -> RTC
+			//?y??? ?Ã°? -> RTC
 			//$ hwclock --systohc
 #if DEF_SUB_MICOM_USE			
 			recorder_low_battery_check();
@@ -2100,7 +2121,7 @@ folder2_files=762
 							if(error_count == 0)
 								led_process_postCommand(LED_WORK_MODE, LED_WORK_SD_ERROR, LED_TIME_INFINITY);
 
-							if(error_count++ < 5 || is_sd_error ) { //Ä«µå ¹Ì»ðÀÔ(5È¸ ¹Ýº¹_5s ÁÖ±â), ³ìÈ­ Áß ¿¡·¯ (¹«ÇÑ¹Ýº¹_5s ÁÖ±â)
+							if(error_count++ < 5 || is_sd_error ) { //??? ?????(5? ???_5s ???), ??? ?? ???? (??????_5s ???)
 								mixwav_play(kMixwaveSDError);
 							}
 							else {
@@ -2710,9 +2731,9 @@ int recorder_parameters_set(oasis::key_value_map_t &parameters, int32_t camera1_
 
 	//recorer settings
 	//parameters["filedir"] = "/mnt/extsd/Videos";
-#ifndef TARGET_CPU_V536
+#if 1	//if 0 => Track 4, 5 
 	//++ 2020/06/14
-	parameters["save-stream-data-in-header"] = "1"; // 1Àº header¿¡ ¹Ù·Î ÀúÀå µÊ
+	parameters["save-stream-data-in-header"] = "1"; 
 
 	//++ 2020/09/21
 	parameters["skip-v1-stream-data-in-movi-chunk"] = "1";
@@ -2772,9 +2793,20 @@ int recorder_parameters_set(oasis::key_value_map_t &parameters, int32_t camera1_
 		
 		parameters["channel1-avi-framerate"] = std::to_string(fps);
 	}
-
+	//if(l_sys_setup.cfg.iVideoQuality == CFG_VIDEO_QUALITY_HIGH)		////////////////////////test_í™”ì§ˆ X
 	parameters["channel1-h264-keyframe-interval"] = std::to_string(fps); //"30";
+	//else 
+	//	parameters["channel1-h264-keyframe-interval"] = std::to_string(5);
 
+#if 0	//test
+	if(l_sys_setup.cfg.iVideoQuality == CFG_VIDEO_QUALITY_HIGH){
+		parameters["channel1-h264-min-qp"] = "27";
+		parameters["channel1-h264-max-qp"] = "35";	//oasis 4.2.8 31=>42
+		parameters["channel1-h264-enable-fixqp"] = "0";
+		parameters["channel1-h264-fix-iqp"] = "20";
+		parameters["channel1-h264-fix-pqp"] = "30";
+	}
+#endif
 #ifndef TARGET_CPU_V536
  #if DEF_VIDEO_FIX_BITRATE
 		parameters["channel1-h264-enable-fixqp"] = "1";
@@ -2793,9 +2825,9 @@ int recorder_parameters_set(oasis::key_value_map_t &parameters, int32_t camera1_
 
 	if(camera2_id >= 0 || camera3_id >= 0) {
 		i = 2;
-		if(camera2_id == -1){
+		if(camera2_id == -1)
 			parameters["channel2-camera-id"] = std::to_string(camera3_id);
-		}
+		
 		for(; i<=c; i++) {
 			//rear camera settings
 			//parameters["rear-hflip"] = "1";
@@ -2820,7 +2852,8 @@ int recorder_parameters_set(oasis::key_value_map_t &parameters, int32_t camera1_
 
 			fps = rec_env.rear_fps;
 			
-			if(fps != CAMERA_FPS){
+			if(fps != CAMERA_FPS)
+			{
 				parameters[format("channel%d-h264-framerate", i)] = std::to_string(fps);
 
 				if(fps == TIMELAPSE_FPS)
@@ -2829,8 +2862,23 @@ int recorder_parameters_set(oasis::key_value_map_t &parameters, int32_t camera1_
 				parameters[format("channel%d-avi-framerate", i)] = std::to_string(fps);
 			}
 
-
+			//if(l_sys_setup.cfg.iVideoQuality == CFG_VIDEO_QUALITY_HIGH)		////////////////////////test_í™”ì§ˆ X
 			parameters[format("channel%d-h264-keyframe-interval", i)] = std::to_string(fps); //"30";
+			//else if(l_sys_setup.cfg.iVideoQuality == CFG_VIDEO_QUALITY_MIDDLE)
+			//	parameters[format("channel%d-h264-keyframe-interval", i)] = std::to_string(5);
+			//else
+			//	parameters[format("channel%d-h264-keyframe-interval", i)] = std::to_string(3);
+
+#if 0	//test
+			if(l_sys_setup.cfg.iVideoQuality == CFG_VIDEO_QUALITY_HIGH){
+				parameters[format("channel%d-h264-min-qp", i)] = "27";
+				parameters[format("channel%d-h264-max-qp", i)] = "35";	//oasis 4.2.8 31=>42
+				parameters[format("channel%d-h264-enable-fixqp", i)] = "0";
+				parameters[format("channel%d-h264-fix-iqp", i)] = "25";
+				parameters[format("channel%d-h264-fix-pqp", i)] = "30";
+			}
+#endif
+			
 #ifndef TARGET_CPU_V536			
  #if DEF_VIDEO_FIX_BITRATE		
 			parameters[format("channel%d-h264-enable-fixqp", i)] = "1";
@@ -2849,6 +2897,14 @@ int recorder_parameters_set(oasis::key_value_map_t &parameters, int32_t camera1_
 #endif 
 		}
 	}
+
+#if 0	//test
+	if(l_sys_setup.cfg.iVideoQuality == CFG_VIDEO_QUALITY_HIGH){
+		parameters["channel1-h264-min-qp"] = "25";
+		parameters["channel2-h264-min-qp"] = "25";
+		parameters["channel3-h264-min-qp"] = "25";
+	}
+#endif
 #ifndef TARGET_CPU_V536		
 	//front+rear common settings
 	if(l_sys_setup.cfg.iVideoQuality == CFG_VIDEO_QUALITY_HIGH){
@@ -2878,7 +2934,7 @@ int recorder_parameters_set(oasis::key_value_map_t &parameters, int32_t camera1_
 
 	}
 	else{//LOW
-		parameters["channel1-h264-min-qp"] = "34";  //35´Â È­ÁúÀÌ º°·Î¶ó 34·Î Fix
+		parameters["channel1-h264-min-qp"] = "34";  //35?? ????? ???Î¶? 34?? Fix
 		parameters["channel2-h264-min-qp"] = "32";
 		parameters["channel3-h264-min-qp"] = "32";
 		parameters["enable-dynamic-qp-range"] = std::to_string(0);
@@ -2909,10 +2965,12 @@ int recorder_parameters_set(oasis::key_value_map_t &parameters, int32_t camera1_
 	if(audio_enable){
 		parameters["snd-card"] = "0";
 		parameters["snd-dev"] = "0";
+		parameters["snd-path"] = "default";		//change to use ALSA
 	}
 	else {
 		parameters["snd-card"] = "-1";
 		parameters["snd-dev"] = "-1";
+		//parameters["snd-path"] = "default";
 	}
 	parameters["snd-input-channels"] = "1";
 	parameters["snd-input-sample-size"] = "16";
@@ -3133,7 +3191,9 @@ void recorder_test_mode_processer(void)
 		title =  oasis::format(" ExtCam not Detected ");
 
 	recorder_test_mode_set_text(l_test_osd_label.ext_cam, title.c_str(), rear_camera_detected);
-	l_test_result.b.ext_cam = rear_camera_detected;
+	//if((l_recorder_camera2_id >= 0) && (l_recorder_camera3_id >= 0))	//check the rear 2ch
+	if(l_recorder_camera_counts == 3)	//check the CH Num because capture size error
+		l_test_result.b.ext_cam = rear_camera_detected;
 
 	// pulse
 	title = oasis::format(" PC:%d",	(int)pulse.m_iPulseSec);
@@ -3804,7 +3864,6 @@ int main(int argc, char* argv[]) {
 	if(!offs_disabled) {
 		parameters["offs-qsize-max"] = std::to_string(OFFS_QUEUE_SIZE_KBYTES);
 		parameters["offs-overwrite-if-exist"] = "1";
-		//parameters["offs-write-alignemnt"] = std::to_string(OFFS_WRITE_ALIGNMENT_BYTES);
 		parameters["offs-cache-size"] = std::to_string(OFFS_CACHE_SIZE_KBYTES);
 	} else {
 		parameters["offs-disable"] = "1";			
@@ -3822,7 +3881,7 @@ int main(int argc, char* argv[]) {
 	// parameters["offs-cmd18-size-max"] = std::to_string(512*1024);
 
 	//parameters["offs-log-flags"] = std::to_string(OFFS_LOG_IO_WRITE_BEGIN|OFFS_LOG_IO_WRITE_END|OFFS_LOG_IO_READ_BEGIN|OFFS_LOG_IO_READ_END|OFFS_LOG_IO_DEBUG);
-	//parameters["offs-log-flags"] = std::to_string(OFFS_LOG_IO_DEBUG);
+	//parameters["offs-log-flags"] = std::to_string(OFFS_LOG_IO_DEBUG);	//
 	parameters["oasis-log-flags"] = std::to_string(OASIS_LOG_DEBUG/*|OASIS_LOG_ENCODE_BITRATE*/);
 	
 #if defined(TARGET_CPU_V3) || defined(TARGET_CPU_I3)
@@ -4062,7 +4121,7 @@ int main(int argc, char* argv[]) {
 	recorder_rear_camera_type_check();
 	
 	////++}*************************************************************
-#if 1//ndef TARGET_CPU_V536		//??? Segmentation fault	//ÈÄ¹æ ³ëÈ­°¡ ¾ÈµÊ
+#if 1//ndef TARGET_CPU_V536		//??? Segmentation fault	//??? ????? ???
 	if(l_recorder_camera2_id >= 0){
 		if(recorder_camera_check(l_recorder_camera2_id, l_rec_env.rear_resolution)){
 			rear_camera_detected = true;
@@ -4070,7 +4129,6 @@ int main(int argc, char* argv[]) {
 		}
 		else{
 			l_recorder_camera2_id = -1;
-			rear_camera_detected = false;
 		}
 	}
 	if(l_recorder_camera3_id >= 0){
@@ -4080,7 +4138,6 @@ int main(int argc, char* argv[]) {
 		}
 		else{
 			l_recorder_camera3_id = -1;
-			rear_camera_detected = false;
 		}
 	}
 #endif
@@ -4317,6 +4374,9 @@ int main(int argc, char* argv[]) {
 
 					if(l_recorder_camera2_id >= 0)
 						ui::previewEnableMotionDetect(preview1, l_recorder_camera2_id, l_rec_env.bMotionRecEnable);
+
+					if(l_recorder_camera3_id >= 0)
+						ui::previewEnableMotionDetect(preview1, l_recorder_camera3_id, l_rec_env.bMotionRecEnable);
 						
 					if(l_rec_env.bMotionRecEnable){
 						ui::previewSetMotionDetectSensitivityLevel(preview1, l_rec_env.motionSensi);
@@ -4376,7 +4436,7 @@ int main(int argc, char* argv[]) {
 							break;
 						}
 
-						if(is_record_restart_good++ < 10) { //evdev¿¡¼­ 500 delay Àû¿ë µÊ, (5 + 10) * 100ms
+						if(is_record_restart_good++ < 10) { //evdev???? 500 delay ???? ??, (5 + 10) * 100ms
 							msleep(100);
 							RecorderPostCommand(cmd.cmd_);
 							break;
@@ -4475,7 +4535,7 @@ int main(int argc, char* argv[]) {
 						break;
 					}
 						
-					if(l_sys_setup.cfg.iEventMode == 0) { // »ó½Ã³ìÈ­ Àü¿ë
+					if(l_sys_setup.cfg.iEventMode == 0) { // ??o?? ????
 						DLOG(DLOG_WARN, "Continuance Recording Mode.\r\n");
 						break;
 					}
@@ -4541,7 +4601,7 @@ int main(int argc, char* argv[]) {
 						DLOG(DLOG_ERROR, "start event recording failed!\r\n");
 					}else {
 						u32 start_tick = get_tick_count();
-						datool_ext_trigger_out_set(1); // 1ÃÊ¸¸ High
+						datool_ext_trigger_out_set(1); // 1??? High
 						mixwav_play(kMixwaveEventRecording);
 
 #ifdef DEF_PAI_R_DATA_SAVE
@@ -4631,7 +4691,7 @@ int main(int argc, char* argv[]) {
 					DLOG(DLOG_WARN, "external power connected!\n");
 
 					if(power_disconnected){
-#if 0 // Àü¿ø Off/On½Ã ¸ØÃß´Â Çö»óÀÌ ÀÖ¾î »ç¿ëÇÏÁö ¾ÊÀ½
+#if 0 // ???? Off/On?? ????? ?????? ??? ??????? ????
 #if DEF_SUB_MICOM_USE		
 						double volt = l_sub_mcu.getBatteryVoltage();
 						if(volt < (double)LOW_BATTERY_MIN_VOLT / 10.0)
@@ -4662,7 +4722,7 @@ int main(int argc, char* argv[]) {
 							postCommand(kStopRecording);
 
 							pai_r_datasaver_emergency_backup();
-						}						
+						}			
 					}
 					break;
 				}
@@ -4904,7 +4964,7 @@ int main(int argc, char* argv[]) {
 
 				Recorder_datalog_add(t);
 				
-				if(tm_t.tm_sec % 10 == 9){ // 10ÃÊ¿¡ ÇÑ ¹ø¾¿ ÀúÀå
+				if(tm_t.tm_sec % 10 == 9){ // 10??? ?? ???? ????
 					if(!power_low_voltage && !power_disconnected)
 						l_datalog.save_log();
 				}
@@ -4919,7 +4979,7 @@ int main(int argc, char* argv[]) {
 #endif
 
 			if(l_is_recording && recorderIsRunning(l_recorder_ref)) {
- #if 0 //DEF_PULSE_DEBUG				
+#if 0 //DEF_PULSE_DEBUG				
 
 				title = oasis::format("[1] %4d/%02d/%02d %02d:%02d:%02d G:%03d, PS:%03d, PC:%d [%d %d %d %d %d]", tm_t.tm_year + 1900, tm_t.tm_mon + 1, tm_t.tm_mday, tm_t.tm_hour, tm_t.tm_min, tm_t.tm_sec, \
 					(int)pulse.m_fGpsSpeed, (int)pulse.m_fPulseSpeed, (int)pulse.m_iPulseSec, \
@@ -5025,7 +5085,7 @@ int main(int argc, char* argv[]) {
 				}
 #endif
 				if(tm_t.tm_hour == 3 && tm_t.tm_min== 0 && tm_t.tm_sec == 0){
-					//ÇÏ·ç¿¡ ÇÑ ¹ø RTC½Ã°£À¸·Î º¸Á¤
+					//??ç¿¡ ?? ?? RTC?Ã°????? ????
 					system("hwclock --hctosys");
 				}
 				

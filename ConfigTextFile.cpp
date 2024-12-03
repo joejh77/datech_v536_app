@@ -146,7 +146,7 @@ BOOL CConfigText::Save(const char * cfg_file_name, LPST_CFG_DAVIEW spConfig)
 
 	TiXmlDocument xmlDoc;
 
-	if ( 0 != access(cfg_file_name, R_OK ) )                              // 파일이 없음
+	if ( 0 != access(cfg_file_name, R_OK ) )                              // ?????? ????
 		MakeDoctype(cfg_file_name);
 	
 	if(!xmlDoc.LoadFile(cfg_file_name))
@@ -338,6 +338,11 @@ BOOL CConfigText::Save(const char * cfg_file_name, LPST_CFG_DAVIEW spConfig)
 		else if(!strcmp(lpszId, "G_Sensi_C")){
 			pEleItem->SetAttribute( "value", spConfig->G_Sensi_C);
 		}
+#ifdef DEF_SAFE_DRIVING_MONITORING_ONOFF
+		else if(!strcmp(lpszId, "SafeMonitoring")){ //test_241127
+			pEleItem->SetAttribute( "value", spConfig->bsafemonitoring);
+		}
+#endif
 		else if(!strcmp(lpszId, "SuddenAccelerationSensi")){
 			pEleItem->SetAttribute( "value", spConfig->iSuddenAccelerationSensi);
 		}
@@ -437,7 +442,7 @@ BOOL CConfigText::Save(const char * cfg_file_name, LPST_CFG_DAVIEW spConfig)
 		pEleItem = pEleItem->NextSiblingElement();
 	}
 
-#if 0 //후타바에서 Microsoft edge에서 Open 가능 하게 해달라는 요청으로, 사용하지 않음
+#if 0 //???????? Microsoft edge???? Open ???? ??? ????? ??u????, ??????? ????
 	//8K fix size use
 	{
 		FILE *fp = fopen(cfg_file_name, "r+");
@@ -698,6 +703,11 @@ BOOL CConfigText::CfgParserFile(const char * cfg_file_name, LPST_CFG_DAVIEW spCo
 		else if(!strcmp(lpszId, "G_Sensi_C")){
 			pEleItem->QueryIntAttribute( "value", &spConfig->G_Sensi_C);
 		}
+#ifdef DEF_SAFE_DRIVING_MONITORING_ONOFF
+		else if(!strcmp(lpszId, "SafeMonitoring")){ //test_241127
+			pEleItem->QueryBoolAttribute( "value", &spConfig->bsafemonitoring);
+		}
+#endif
 		else if(!strcmp(lpszId, "SuddenAccelerationSensi")){
 			pEleItem->QueryIntAttribute( "value", &spConfig->iSuddenAccelerationSensi);
 		}
@@ -879,10 +889,10 @@ BOOL CConfigText::CfgDefaultSet(LPST_CFG_DAVIEW pCfg)
 	pCfg->bFactoryReset = 0;
 #if BUILD_MODEL == BUILD_MODEL_VRHD_SECURITY_REAR_1CH
 	pCfg->iPulseReset = 2; //manual mode
-	pCfg->dPulseParam = 197.8;	// 637rpm to 1400rpm, 1400 / 637 = 2.1978이므로 9펄스라면  9 * 2.1978 * 10 = 197.8
+	pCfg->dPulseParam = 197.8;	// 637rpm to 1400rpm, 1400 / 637 = 2.1978???? 9??????  9 * 2.1978 * 10 = 197.8
 #else
 	pCfg->iPulseReset = 1;
-	pCfg->dPulseParam = 80.0;		// 8 펄스
+	pCfg->dPulseParam = 80.0;		// 8 ???
 #endif
 
 	pCfg->bBrake = 0;
@@ -897,18 +907,24 @@ BOOL CConfigText::CfgDefaultSet(LPST_CFG_DAVIEW pCfg)
 	pCfg->G_Sensi_B = 1;
 	pCfg->G_Sensi_C= 1;
  #if defined(DEF_SAFE_DRIVING_MONITORING) && defined(DEF_OSAKAGAS_DATALOG)
-  //급가속: 1초만에 12km 이상 가속
-  //급감 속도: 1초 만에 12km 이상 감속
-  //급핸들 : 차속×각도÷10=26 이상
+ #ifdef DEF_SAFE_DRIVING_MONITORING_ONOFF
+  	pCfg->bsafemonitoring = 1;			//ON/OFF test_241127
+#endif
+	#if 1	// 1 : default_241126
   	pCfg->iSuddenAccelerationSensi = 12;
 	pCfg->iSuddenDeaccelerationSensi = 12;
-	pCfg->iRapidRotationSensi = 26;
+	pCfg->iRapidRotationSensi = 60;		//26=>60
+	#else
+	pCfg->iSuddenAccelerationSensi = 300;
+	pCfg->iSuddenDeaccelerationSensi = 300;
+	pCfg->iRapidRotationSensi = 3600;		
+	#endif
  #else
 	pCfg->iSuddenAccelerationSensi = 5;
 	pCfg->iSuddenDeaccelerationSensi = 5;
 	pCfg->iRapidRotationSensi = 5;
 #endif
-
+	#if 1	// 1 : default_241126
 	pCfg->Overspeed.nSpeed = 60;	//Km, General overspeed determination speed 
 	pCfg->Overspeed.nTime = 30;		//Sec,
 	pCfg->Overspeed.nAlarm = 600;	//Sec,
@@ -917,6 +933,16 @@ BOOL CConfigText::CfgDefaultSet(LPST_CFG_DAVIEW pCfg)
 	pCfg->Fastspeed.nAlarm = 600;
 	pCfg->Highspeed.nSpeed = 80;	// Km, High-speed determination speed
 	pCfg->Highspeed.nTime = 120;
+	#else
+	pCfg->Overspeed.nSpeed = 280;	//Km, General overspeed determination speed 
+	pCfg->Overspeed.nTime = 30;		//Sec,
+	pCfg->Overspeed.nAlarm = 600;	//Sec,
+	pCfg->Fastspeed.nSpeed = 300;	//Km, Fast overspeed determination speed
+	pCfg->Fastspeed.nTime = 30;		
+	pCfg->Fastspeed.nAlarm = 600;
+	pCfg->Highspeed.nSpeed = 80;	// Km, High-speed determination speed
+	pCfg->Highspeed.nTime = 120;
+	#endif
 	
 	pCfg->bDebugMode = 0;
 	pCfg->bTestMode = 0;
@@ -942,11 +968,11 @@ BOOL CConfigText::CfgDefaultSet(LPST_CFG_DAVIEW pCfg)
 }
 
 /*
-PulseReset=パルス リセット
-Brake=ブレ?キ
-Input1=インプット1
-Input2=インプット2
-EventCapacity=イベント容量		//0%(off), 10%,	20%
+PulseReset=??維� ???e?
+Brake=??????
+Input1=?????e?1
+Input2=?????e?2
+EventCapacity=?????????		//0%(off), 10%,	20%
 */
 
 BOOL CConfigText::MakeDoctype(const char * cfg_file_name)
@@ -1008,6 +1034,9 @@ BOOL CConfigText::MakeDoctype(const char * cfg_file_name)
 		"<item value=\"FALSE\" id=\"OSDSpeed\"/>"
 		"<item value=\"FALSE\" id=\"OSDRpm\"/>"
 		"<!-- LOG, SAFETY -->"
+#ifdef DEF_SAFE_DRIVING_MONITORING_ONOFF
+		"<item value=\"1\" id=\"SafeMonitoring\"/>" //test_241127
+#endif
 		"<item value=\"5\" id=\"SuddenAccelerationSensi\"/>"
 		"<item value=\"5\" id=\"SuddenDeaccelerationSensi\"/>"
 		"<item value=\"5\" id=\"RapidRotationSensi\"/>"
