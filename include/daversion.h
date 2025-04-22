@@ -6,7 +6,7 @@
 #define	BUILD_MODEL_VRHD_SECURITY							2		//H:1080p, M:720p, L:720p/360p
 #define	BUILD_MODEL_VRHD_SECURITY_REAR_1CH 					3
 #define	BUILD_MODEL_VRHD_V1V2								4		//H:1080p, M:720p, L:720p/360p
-#define	BUILD_MODEL_VRHD_220S								5		//AC200 »èÁ¦, Pulse, digital IO »èÁ¦
+#define	BUILD_MODEL_VRHD_220S								5		//AC200 ????, Pulse, digital IO ????
 #define BUILD_MODEL_VRHD_SECURITY_3CH						6		//3ch
 
 //#define	BUILD_MODEL 			BUILD_MODEL_VRHD_PAI_R
@@ -17,15 +17,15 @@
 #define	BUILD_MODEL 			BUILD_MODEL_VRHD_SECURITY_3CH
 
 
-#define USE_DA_PULSE  1
+#define USE_DA_PULSE  				1
 
-#define ENABLE_BOARD_CHECK	0
-#define DEF_PULSE_DEBUG		1
+#define ENABLE_BOARD_CHECK			0
+#define DEF_PULSE_DEBUG				1
 
 #define DEF_BOARD_WITHOUT_DCDC		1 	// new board, without dcdc
-#define DEF_SUB_MICOM_USE					1
+#define DEF_SUB_MICOM_USE			1
 
-#define DEF_PAI_R_SPD_INTERVAL	500
+#define DEF_PAI_R_SPD_INTERVAL		500
 
 #if ENABLE_BOARD_CHECK
 #define 	DA_MODEL_NAME		"DA_DEMO CHK"
@@ -60,14 +60,14 @@
 
 #define DEF_SAFE_DRIVING_MONITORING
 #define DEF_OSAKAGAS_DATALOG
-#define DEF_TEST_SERVER_USE		// LTE ¸ðµ© Åë½Å test
+#define DEF_TEST_SERVER_USE		// LTE ?? ??? test
 #define DEF_USB_LTE_MODEM_USE
 
 #elif (BUILD_MODEL == BUILD_MODEL_VRHD_SECURITY || BUILD_MODEL == BUILD_MODEL_VRHD_SECURITY_REAR_1CH || BUILD_MODEL == BUILD_MODEL_VRHD_SECURITY_3CH)
-#define __FW_VERSION__			"0.0.3"
+#define __FW_VERSION__			"1.1.0"		// 1080p 2.0.0
 
  #if BUILD_MODEL == BUILD_MODEL_VRHD_SECURITY_3CH
-	#define DA_FIRMWARE_VERSION	"VRSE/3CH" __FW_VERSION__
+	#define DA_FIRMWARE_VERSION	"VR3CH/" __FW_VERSION__
  #elif BUILD_MODEL == BUILD_MODEL_VRHD_SECURITY
 	#define DA_FIRMWARE_VERSION	"VRSE/" __FW_VERSION__
  #else
@@ -85,9 +85,12 @@
 #define DEF_30FIX_FRAME				0
 #define REAR_1080P 					0
 #define ENABLE_DATA_LOG	 			1
-//////////////////////////////////////////DA ¾ç»ê
-#define DEF_SAFE_DRIVING_MONITORING		//¿À»çÄ« °¡½ºÇâ¿¡¼­ »ç¿ë
+//////////////////////////////////////////DATECH
+#define DEF_SAFE_DRIVING_MONITORING			//Futaba
 #define DEF_OSAKAGAS_DATALOG
+#define	DEF_SAFE_DRIVING_MONITORING_ONOFF	//ONOFF  test_241127
+//#define DEF_FRONT_1080P						//Front Image_1080P_241203				
+
 
 #elif (BUILD_MODEL == BUILD_MODEL_VRHD_V1V2)
 #define __FW_VERSION__			"0.0.27"
@@ -129,12 +132,46 @@
 //////////////////////////////////////////////////////
 //Revision Note
 /*
+1.1.0 : 20250219
+ 1) Standard F/W ver. change 1.0.0 => 1.1.0 
+
+2.0.0 : 20241218
+ 1)rearcam bitrate : 2.25M
+
+2.0.0 : 20241203_reboot
+ 1) Front : 2M / Rear : 1M
+ 2) Low : 6fps
+ 3) SafeMonitoring ON/OFF
+
+1.0.0 : 20241126
+ 1) SafeMonitoring value change
+
+1.0.0 : 20241021
+ 1) Initial MS version
+
+0.0.7 : 20240924 (Futaba ver.)
+ 1) Low : bitrate 4M -> 3.5M ë¡œ ìˆ˜ì •
+ 2) Keyframe interval restoration
+ 3) Active the gps_tx pin
+ 4) Always on the GPS PWR of PMIC
+
+0.0.6 : 20240805
+ 1) Picture Number ë¹ ì§€ëŠ” ë¶€ë¶„ API ìˆ˜ì • (í•œìƒì€ëŒ€í‘œ)
+ 2) imx307 sensor window, frame_delay ìˆ˜ì •
+
+0.0.5 : 20240522
+ 1) Viewer scroll bar 45ì´ˆì—ì„œ next file ë„˜ì–´ê°€ëŠ” ë¬¸ì œ ìˆ˜ì •
+ 2) Rear CAM1 detect ìˆ˜ì •
+
+0.0.4 : 20240416
+ 1) Pulse count ì˜¤ì°¨ ìˆ˜ì •
+
 0.0.3 : 20230925
- 1) DDR CLK º¯°æ : 792M -> 768M (GPS Band x) => Test
+ 1) DDR CLK ë³€ê²½ : 792M -> 768M (GPS Band x) => Test
  
 0.0.3 : 20230724
  1) RearCAM Auto Detect
- 2) pop noise ¼öÁ¤(mono -> stereo)
+ 2) pop noise ìˆ˜ì •(mono -> stereo)
  
 0.0.1 : 20230406
  1) initial version
