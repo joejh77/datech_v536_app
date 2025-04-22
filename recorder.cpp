@@ -551,6 +551,10 @@ class MyRecordingObserver : public MediaObserver
 		if(reason == kRecordingErrorMediaDataTimeout) {
 			int32_t camera_id = (int32_t)details;
 			DLOG(DLOG_RECORD|DLOG_ERROR, "Recording error, reason: %d(%s), camera<%d>\r\n", reason, mediaReportReasonString(reason), camera_id);
+			if(camera_id == 0){	//imx307 error_reboot 250228
+				recorder_reboot();
+				//postCommand(kStopRecording);
+			}
 		} else if(reason == kRecordingErrorMediaCacheReadErrorBegin) {
 			DLOG(DLOG_RECORD|DLOG_WARN, "Recording error, reason: %d(%s)\r\n", reason, mediaReportReasonString(reason));
 		} else if(reason == kRecordingErrorMediaCacheReadErrorEnd) {
@@ -1402,25 +1406,25 @@ bool recorder_env_setup(REC_ENV *pEnv, bool is_parking_mode)
 #endif
 			pEnv->rear_resolution = CFG_RESOLUTION_720P;
 		}
-#if 1//(BUILD_MODEL == BUILD_MODEL_VRHD_V1V2)
+#if 1	//(BUILD_MODEL == BUILD_MODEL_VRHD_V1V2)
 		else if(l_sys_setup.cfg.iVideoQuality == CFG_VIDEO_QUALITY_LOW){
- #ifdef DEF_LOW_FRONT_720P
- 	#if 1
- 			pEnv->front_resolution = CFG_RESOLUTION_720P;
- 			pEnv->rear_resolution = CFG_RESOLUTION_360P;
-	#else	//1080p, 720p Test_241029
-			pEnv->front_resolution = CFG_RESOLUTION_1080P;
+ #ifdef DEF_FRONT_1080P		//Test_241203
+ 			pEnv->front_resolution = CFG_RESOLUTION_1080P;
  			pEnv->rear_resolution = CFG_RESOLUTION_720P;
-	#endif
- #else
-			pEnv->front_resolution = CFG_RESOLUTION_360P;
+ #else		
+			pEnv->front_resolution = CFG_RESOLUTION_720P;
  			pEnv->rear_resolution = CFG_RESOLUTION_360P;
  #endif
 		}
 #endif
 		else{ //MIDDLE
+ #ifdef DEF_FRONT_1080P		//Test_241203
+			pEnv->front_resolution = CFG_RESOLUTION_1080P;
+			pEnv->rear_resolution = CFG_RESOLUTION_720P;
+ #else		
 			pEnv->front_resolution = CFG_RESOLUTION_720P;
 			pEnv->rear_resolution = CFG_RESOLUTION_720P;
+ #endif
 		}
 #else
 		pEnv->front_resolution = l_sys_setup.cfg.iFrontResolution;
@@ -1494,16 +1498,16 @@ bool recorder_env_setup(REC_ENV *pEnv, bool is_parking_mode)
 			pEnv->rear_bitrate = (l_sys_setup.cfg.iVideoQuality + 1) * BITRATE_720P;
 		}
 		else {		//4M,1.5M_file size 20M/8M
-	#if 1
+#ifdef DEF_FRONT_1080P		//1080p, 720p Test_241203
+			pEnv->rear_fps = pEnv->front_fps = 6;
+			pEnv->front_bitrate = 5000000;
+			pEnv->rear_bitrate = 2250000;
+#else		
 			pEnv->front_fps = 10;
 			pEnv->rear_fps = 6;
 			pEnv->front_bitrate = (l_sys_setup.cfg.iVideoQuality + 1) * BITRATE_1080P + BITRATE_1080P;
 			pEnv->rear_bitrate = BITRATE_REAR_LOW;
-	#else		//1080p, 720p Test_241029
-			pEnv->rear_fps = pEnv->front_fps = 6;
-			pEnv->front_bitrate = 5000000;
-			pEnv->rear_bitrate = 2300000;
-	#endif
+#endif
 		}
  #else
   #if 0
@@ -4313,7 +4317,7 @@ int main(int argc, char* argv[]) {
 						break;
 					}
 					////++{** rear camera resolution check **********************************
-					if(recorder_rear_camera_type_check())
+					if(recorder_rear_camera_type_check())		
 						break;
 					////++}*************************************************************
 					
@@ -4717,8 +4721,11 @@ int main(int argc, char* argv[]) {
 						if(l_is_recording){
 							mixwav_play(kMixwaveRecordStop);
 							mixwav_play(kMixwave10SecBlocking);
-							sleep(2);
-							//msleep(1500);
+							if(l_sys_setup.cfg.iVideoQuality == CFG_VIDEO_QUALITY_HIGH)		//add_250306
+								sleep(1);	
+							else			
+								sleep(2);
+							
 							postCommand(kStopRecording);
 
 							pai_r_datasaver_emergency_backup();
@@ -4962,7 +4969,7 @@ int main(int argc, char* argv[]) {
 			if(l_sys_setup.isInit() && pre_log_update_time != t){
 				pre_log_update_time = t;
 
-				Recorder_datalog_add(t);
+				Recorder_datalog_add(t);		//Use to the OnFrame_250304
 				
 				if(tm_t.tm_sec % 10 == 9){ // 10??? ?? ???? ????
 					if(!power_low_voltage && !power_disconnected)
