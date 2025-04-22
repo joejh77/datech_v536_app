@@ -908,40 +908,40 @@ BOOL CConfigText::CfgDefaultSet(LPST_CFG_DAVIEW pCfg)
 	pCfg->G_Sensi_C= 1;
  #if defined(DEF_SAFE_DRIVING_MONITORING) && defined(DEF_OSAKAGAS_DATALOG)
  #ifdef DEF_SAFE_DRIVING_MONITORING_ONOFF
-  	pCfg->bsafemonitoring = 1;			//ON/OFF test_241127
+  	pCfg->bsafemonitoring = 0;			//ON/OFF test_241127
 #endif
-	#if 1	// 1 : default_241126
-  	pCfg->iSuddenAccelerationSensi = 12;
-	pCfg->iSuddenDeaccelerationSensi = 12;
-	pCfg->iRapidRotationSensi = 60;		//26=>60
+	#if 0	// 1 : default_241126
+  		pCfg->iSuddenAccelerationSensi = 12;
+		pCfg->iSuddenDeaccelerationSensi = 12;
+		pCfg->iRapidRotationSensi = 60;		//26=>60
 	#else
-	pCfg->iSuddenAccelerationSensi = 300;
-	pCfg->iSuddenDeaccelerationSensi = 300;
-	pCfg->iRapidRotationSensi = 3600;		
+		pCfg->iSuddenAccelerationSensi = 300;
+		pCfg->iSuddenDeaccelerationSensi = 300;
+		pCfg->iRapidRotationSensi = 3600;		
 	#endif
  #else
 	pCfg->iSuddenAccelerationSensi = 5;
 	pCfg->iSuddenDeaccelerationSensi = 5;
 	pCfg->iRapidRotationSensi = 5;
 #endif
-	#if 1	// 1 : default_241126
-	pCfg->Overspeed.nSpeed = 60;	//Km, General overspeed determination speed 
-	pCfg->Overspeed.nTime = 30;		//Sec,
-	pCfg->Overspeed.nAlarm = 600;	//Sec,
-	pCfg->Fastspeed.nSpeed = 90;	//Km, Fast overspeed determination speed
-	pCfg->Fastspeed.nTime = 30;		
-	pCfg->Fastspeed.nAlarm = 600;
-	pCfg->Highspeed.nSpeed = 80;	// Km, High-speed determination speed
-	pCfg->Highspeed.nTime = 120;
+	#if 0	// 1 : default_241126
+		pCfg->Overspeed.nSpeed = 60;	//Km, General overspeed determination speed 
+		pCfg->Overspeed.nTime = 30;		//Sec,
+		pCfg->Overspeed.nAlarm = 600;	//Sec,
+		pCfg->Fastspeed.nSpeed = 90;	//Km, Fast overspeed determination speed
+		pCfg->Fastspeed.nTime = 30;		
+		pCfg->Fastspeed.nAlarm = 600;
+		pCfg->Highspeed.nSpeed = 80;	// Km, High-speed determination speed
+		pCfg->Highspeed.nTime = 120;
 	#else
-	pCfg->Overspeed.nSpeed = 280;	//Km, General overspeed determination speed 
-	pCfg->Overspeed.nTime = 30;		//Sec,
-	pCfg->Overspeed.nAlarm = 600;	//Sec,
-	pCfg->Fastspeed.nSpeed = 300;	//Km, Fast overspeed determination speed
-	pCfg->Fastspeed.nTime = 30;		
-	pCfg->Fastspeed.nAlarm = 600;
-	pCfg->Highspeed.nSpeed = 80;	// Km, High-speed determination speed
-	pCfg->Highspeed.nTime = 120;
+		pCfg->Overspeed.nSpeed = 280;	//Km, General overspeed determination speed 
+		pCfg->Overspeed.nTime = 30;		//Sec,
+		pCfg->Overspeed.nAlarm = 600;	//Sec,
+		pCfg->Fastspeed.nSpeed = 300;	//Km, Fast overspeed determination speed
+		pCfg->Fastspeed.nTime = 30;		
+		pCfg->Fastspeed.nAlarm = 600;
+		pCfg->Highspeed.nSpeed = 80;	// Km, High-speed determination speed
+		pCfg->Highspeed.nTime = 120;
 	#endif
 	
 	pCfg->bDebugMode = 0;
